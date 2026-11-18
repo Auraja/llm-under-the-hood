@@ -11,7 +11,7 @@ ilustrasi.
 ## Progres
 
 - [x] Day 01 - tokenization
-- [ ] Day 02 - transformer (attention, rope, jumlah parameter)
+- [x] Day 02 - transformer (attention, rope, jumlah parameter)
 - [ ] Day 03 - arsitektur model & cara adaptasi (LoRA, quantization, RAG)
 - [ ] Day 04 - inference (KV cache, decoding, biaya)
 
@@ -78,8 +78,21 @@ day01_tokenization/
 ├── token_cost.py
 ├── README.md
 └── results.md
+day02_transformer/
+├── embeddings.py
+├── positional_encoding.py
+├── rope.py
+├── attention.py
+├── attention_variants.py
+├── feed_forward.py
+├── normalization.py
+├── decoder_block.py
+├── parameter_estimator.py
+├── README.md
+└── results.md
 tests/
-└── test_tokenization.py
+├── test_tokenization.py
+└── test_attention.py
 ```
 
 ## Day 01 - angka yang keluar
@@ -95,3 +108,15 @@ Semua dijalanin di CPU (12 core, 16 GB RAM, Python 3.12). Detail lengkapnya ada 
 - Percakapan 1.307 token harus dipotong ke 180 token (budget 220 dikurangi 40 buat
   jawaban). Cuma `head_tail` dan `truncate_content` yang masih nyimpen fakta di awal.
 - Prompt caching motong biaya input 61% kalau 92% prompt-nya statis.
+
+## Day 02 - angka yang keluar
+
+Detail di `day02_transformer/results.md`.
+
+- Estimasi parameter ketemu dengan angka publik: LLaMA-2 7B **6.74B** (selisih
+  0.02%), 70B **68.98B** (0.00%), Qwen2.5 7B **7.62B** (0.06%).
+- Di LLaMA-2 7B, **64.2%** parameter ada di FFN, **31.9%** di attention.
+- GQA-8 memotong KV cache **4x**: 4.096 MB jadi 1.024 MB (d_model 4096, 32 head).
+  Yang dihemat cache-nya, bukan parameter utamanya.
+- Attention NumPy vs PyTorch: selisih **2.2e-16**.
+- Bobot LLaMA-2 70B: 138 GB fp16, 34.5 GB int4 — belum termasuk KV cache.
