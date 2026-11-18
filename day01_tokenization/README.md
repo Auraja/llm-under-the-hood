@@ -83,10 +83,11 @@ penting (bahkan system prompt), `head_tail` menyisakan celah di tengah,
 
 Angka lengkap ada di [`results.md`](results.md). Ringkasnya:
 
-- BPE lokal dengan 40 merge menghasilkan vocabulary 87 token.
-- Frasa `"a token is not a word"`: 21 karakter, 6 token tiktoken, 10 token
+- BPE lokal dengan 40 merge menghasilkan vocabulary 76 token.
+- Frasa `"token bukan kata"`: 16 karakter, 4 token tiktoken, 6 token
   BPE lokal.
-- Tokenizer Inggris (cl100k) mencapai ~3.4 karakter/token; BPE lokal 1.4.
+- Tokenizer Inggris (cl100k) mencapai ~2.76 karakter/token pada teks uji;
+  BPE lokal 1.71.
 - Overhead template ChatML ~48% dari prompt percakapan pendek.
 - Percakapan 1.307 token harus dipotong ke 180 token efektif (budget 220 minus
   reserve 40 untuk jawaban). `head_tail` dan `truncate_content` mempertahankan

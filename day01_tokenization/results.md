@@ -16,23 +16,24 @@ Semua eksperimen offline. tiktoken memakai cache lokal `cl100k_base`
 
 ## 1. BPE dari nol (`bpe.py`)
 
-Corpus: 2.649 karakter, 252 kata unik. Setelah 40 merge:
+Corpus: 2.738 karakter, 229 kata unik. Setelah 40 merge:
 
 | Metrik | Nilai |
 |---|---|
 | Merge rules | 40 |
-| Vocabulary | 87 token |
-| Merge teratas | `e`+`</w>` (74), `s`+`</w>` (71), `e`+`n` (54), `t`+`h` (44) |
+| Vocabulary | 76 token |
+| Merge teratas | `a`+`n` (94), `e`+`n` (77), `an`+`</w>` (53), `a`+`</w>` (45) |
 
 Merge pertama langsung menemukan bahwa `</w>` (akhir kata) adalah simbol yang
-sangat sering: kata berakhiran `e` dan `s` mendominasi corpus. Ini menjelaskan
-kenapa tokenizer nyata punya token seperti `" the"` dan `"ing"`.
+sangat sering: kata berakhiran `n`, `a`, dan `i` mendominasi corpus. Corpus
+Indonesia juga memunculkan prefiks/sufiks yang sering (`men`, `kan`, `di`) lebih
+cepat daripada corpus Inggris pada jumlah merge yang sama.
 
-Kompresi `"a token is not a word"`:
+Kompresi `"token bukan kata"`:
 
 ```
-BPE lokal : 10 token  (a</w>, token</w>, is</w>, n, o, t</w>, a</w>, w, or, d</w>)
-tiktoken  :  6 token  (a, " token", " is", " not", " a", " word")
+BPE lokal : 6 token  (token</w>, bu, kan</w>, k, at, a</w>)
+tiktoken  : 4 token  (token, " bu", "kan", " kata")
 ```
 
 Dua hal penting:
@@ -57,26 +58,29 @@ sulit dilacak, jadi default di sini adalah `strict=True`.
 
 | Teks | char | word | BPE lokal | tiktoken |
 |---|---:|---:|---:|---:|
-| `Hello world` | 11 | 2 | 9 | 2 |
-| `Tokenization is not the same as splitting on spaces.` | 52 | 9 | 36 | 11 |
-| `LLM mempelajari pola dari data, bukan aturan tata bahasa.` | 57 | 9 | 45 | 20 |
-| `def attention(q, k, v): return softmax(q @ k.T) @ v` | 51 | 10 | 39 | 17 |
-| `Antidisestablishmentarianism` | 28 | 1 | 24 | 6 |
-| `2026-11-17T09:00:00Z` | 20 | 1 | 4 | 13 |
-| `    indented code with weird     spacing   ` | 43 | 5 | 25 | 9 |
-| **TOTAL** | **262** | **37** | **182** | **78** |
+| `Halo dunia` | 10 | 2 | 8 | 4 |
+| `Tokenisasi bukan sekadar memecah teks pada spasi.` | 49 | 7 | 29 | 16 |
+| `LLM mempelajari pola dari data, bukan aturan tata bahasa.` | 57 | 9 | 34 | 20 |
+| `def attention(q, k, v): return softmax(q @ k.T) @ v` | 51 | 10 | 36 | 17 |
+| `Mempertanggungjawabkan` | 22 | 1 | 16 | 9 |
+| `2026-11-17T09:00:00Z` | 20 | 1 | 3 | 13 |
+| `    kode menjorok dengan     spasi aneh   ` | 42 | 5 | 21 | 12 |
+| **TOTAL** | **251** | **35** | **147** | **91** |
 
-Rasio kompresi: BPE lokal 1.44 char/token, tiktoken 3.36 char/token.
+Rasio kompresi: BPE lokal 1.71 char/token, tiktoken 2.76 char/token.
 
 Temuan:
 
-- Tokenizer lokal menang pada timestamp (`2026-...` = 4 token) hanya karena
+- Tokenizer lokal menang pada timestamp (`2026-...` = 3 token) hanya karena
   karakter tersebut kebetulan sering muncul bersamaan di corpus kecil.
-- `Antidisestablishmentarianism`: tiktoken memecah menjadi morfem yang masuk
-  akal (`Ant`, `idis`, `establish`, `ment`, `arian`, `ism`), BPE lokal
-  menjadi 24 potongan acak.
-- Bahasa Indonesia memakai 12 token untuk 40 karakter — lebih mahal per
-  karakter daripada teks Inggris pada tokenizer berbahasa Inggris.
+- `Mempertanggungjawabkan`: tiktoken memecah menjadi morfem yang masuk akal
+  untuk bahasa Indonesia (`M`, `emp`, `ert`, `ang`, `g`, `ung`, `jaw`, `ab`,
+  `kan`) — jadi tokenizer Inggris pun sebagian "paham" sufiks `-kan`. BPE lokal
+  menjadi 16 potongan yang lebih acak.
+- Kalimat `Model bahasa mempelajari pola dari data.` (40 karakter) = 12 token
+  tiktoken (3.33 char/token), sedangkan `The language model learns patterns
+  from data.` (45 karakter) = 8 token (5.62 char/token). Teks Indonesia lebih
+  mahal per karakter di tokenizer berbahasa Inggris.
 - Kode Python lebih mahal daripada prosa: 17 token untuk 51 karakter.
 
 ## 3. Special token (`special_tokens.py`)

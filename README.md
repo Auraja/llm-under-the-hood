@@ -87,9 +87,10 @@ tests/
 Semua dijalanin di CPU (12 core, 16 GB RAM, Python 3.12). Detail lengkapnya ada di
 `day01_tokenization/results.md`.
 
-- Corpus 2.649 karakter, 40 merge rules → vocab 87 token.
-- Frasa `"a token is not a word"`: 21 karakter, 10 token BPE lokal, 6 token tiktoken.
-- cl100k ~3.4 karakter/token buat teks Inggris, BPE lokal 1.4.
+- Corpus 2.738 karakter (bahasa Indonesia), 40 merge rules → vocab 76 token.
+- Frasa `"token bukan kata"`: 16 karakter, 6 token BPE lokal, 4 token tiktoken.
+- cl100k ~2.76 karakter/token buat 7 teks uji (campur Indonesia + kode), BPE lokal 1.71.
+- `"Mempertanggungjawabkan"`: 9 token tiktoken (memecah morfem `emp`/`ang`/`jaw`/`ab`/`kan`), 16 token BPE lokal.
 - Template ChatML nambah overhead ~48% di percakapan pendek.
 - Percakapan 1.307 token harus dipotong ke 180 token (budget 220 dikurangi 40 buat
   jawaban). Cuma `head_tail` dan `truncate_content` yang masih nyimpen fakta di awal.
