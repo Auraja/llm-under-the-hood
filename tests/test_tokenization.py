@@ -20,7 +20,7 @@ import special_tokens  # noqa: E402
 import token_cost  # noqa: E402
 import tokenizer_comparison  # noqa: E402
 
-CORPUS = "the cat sat on the mat the cat ran away"
+CORPUS = "kucing itu duduk di atas tikar kucing itu lari"
 
 
 # --------------------------------------------------------------- BPE
@@ -28,12 +28,12 @@ def test_bpe_training_reduces_token_count():
     model = bpe.BPE.train(CORPUS, num_merges=10)
     assert model.vocab_size > len(set(CORPUS))
     assert len(model.merges) == 10
-    assert len(model.encode("the cat")) < len("the cat")
+    assert len(model.encode("kucing itu")) < len("kucing itu")
 
 
 def test_bpe_roundtrip():
     model = bpe.BPE.train(CORPUS, num_merges=10)
-    for text in ["the cat", "cat sat on mat", "the cat ran away"]:
+    for text in ["kucing itu", "itu duduk di atas tikar", "kucing itu lari"]:
         assert model.decode(model.encode(text)) == text
 
 
@@ -82,17 +82,17 @@ def test_build_labels_masks_prompt_and_padding():
 # --------------------------------------------------------- chat template
 def test_chatml_contains_roles_and_markers():
     messages = [
-        {"role": "system", "content": "sys"},
-        {"role": "user", "content": "hi"},
+        {"role": "system", "content": "sistem"},
+        {"role": "user", "content": "halo"},
     ]
     text = chat_template.render_chatml(messages)
     assert text.startswith("<|bos|>")
-    assert "<|im_start|>system\nsys<|im_end|>" in text
-    assert "<|im_start|>user\nhi<|im_end|>" in text
+    assert "<|im_start|>system\nsistem<|im_end|>" in text
+    assert "<|im_start|>user\nhalo<|im_end|>" in text
 
 
 def test_empty_system_prompt_is_skipped():
-    messages = [{"role": "system", "content": "  "}, {"role": "user", "content": "hi"}]
+    messages = [{"role": "system", "content": "  "}, {"role": "user", "content": "halo"}]
     text = chat_template.render_chatml(messages)
     assert "<|im_start|>system" not in text
 
@@ -105,10 +105,10 @@ def test_plain_rendering_has_no_markup():
 # --------------------------------------------------------- context window
 def test_fit_to_budget_respects_every_strategy():
     messages = [
-        {"role": "system", "content": "sys " * 20},
-        {"role": "user", "content": "important 4271"},
+        {"role": "system", "content": "sistem " * 20},
+        {"role": "user", "content": "penting 4271"},
         {"role": "assistant", "content": "ok " * 60},
-        {"role": "user", "content": "latest question " * 30},
+        {"role": "user", "content": "pertanyaan terbaru " * 30},
     ]
     for strategy in ["drop_oldest", "keep_system", "head_tail", "truncate_content"]:
         result = context_window.fit_to_budget(messages, budget=120, strategy=strategy)
@@ -118,17 +118,17 @@ def test_fit_to_budget_respects_every_strategy():
 
 def test_keep_system_preserves_system_message():
     messages = [
-        {"role": "system", "content": "keep me"},
+        {"role": "system", "content": "simpan aku"},
         {"role": "user", "content": "x " * 200},
         {"role": "user", "content": "y"},
     ]
     result = context_window.fit_to_budget(messages, budget=50, strategy="keep_system")
     assert result["kept"][0]["role"] == "system"
-    assert result["kept"][0]["content"] == "keep me"
+    assert result["kept"][0]["content"] == "simpan aku"
 
 
 def test_truncate_content_keeps_message_count():
-    messages = [{"role": "user", "content": "word " * 200}]
+    messages = [{"role": "user", "content": "kata " * 200}]
     result = context_window.fit_to_budget(messages, budget=50, strategy="truncate_content")
     assert len(result["kept"]) == 1
     assert result["tokens"] <= 50
@@ -201,7 +201,7 @@ def test_special_tokens_use_longest_match():
 
 
 def test_generation_prompt_adds_assistant_header():
-    messages = [{"role": "user", "content": "hi"}]
+    messages = [{"role": "user", "content": "halo"}]
     with_header = chat_template.render_chatml(messages, add_generation_prompt=True)
     without = chat_template.render_chatml(messages)
     assert with_header.endswith("<|im_start|>assistant\n")
@@ -215,7 +215,7 @@ def test_token_count_of_empty_text_is_zero():
 
 def test_llama2_template_uses_system_once():
     messages = [
-        {"role": "system", "content": "SYS"},
+        {"role": "system", "content": "SISTEM"},
         {"role": "user", "content": "u1"},
         {"role": "assistant", "content": "a1"},
         {"role": "user", "content": "u2"},
@@ -223,7 +223,7 @@ def test_llama2_template_uses_system_once():
     text = chat_template.render_llama2(messages)
     assert text.startswith("<s>")
     assert text.count("[INST]") == 2
-    assert "[INST] SYS u1 [/INST]" in text
+    assert "[INST] SISTEM u1 [/INST]" in text
     assert "[INST] u2 [/INST]" in text
 
 
@@ -247,7 +247,7 @@ def test_reserve_tokens_reduces_available_space():
 
 def test_drop_oldest_and_keep_system_differ_on_system_prompt():
     messages = [
-        {"role": "system", "content": "system " * 30},
+        {"role": "system", "content": "sistem " * 30},
         {"role": "user", "content": "u " * 30},
     ]
     dropped = context_window.fit_to_budget(messages, 50, "drop_oldest")
@@ -258,8 +258,8 @@ def test_drop_oldest_and_keep_system_differ_on_system_prompt():
 
 def test_truncate_content_preserves_short_messages():
     messages = [
-        {"role": "user", "content": "needle 4271"},
-        {"role": "assistant", "content": "filler " * 100},
+        {"role": "user", "content": "jarum 4271"},
+        {"role": "assistant", "content": "pengisi " * 100},
     ]
     result = context_window.fit_to_budget(messages, 30, "truncate_content")
     assert len(result["kept"]) == 2
