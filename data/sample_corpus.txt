@@ -1,0 +1,41 @@
+# Sample corpus for local experiments (tokenization, BPE, n-gram demos).
+# Small, repetitive, and fully offline. Vocabulary is intentionally narrow so
+# that BPE merges become visible after only a few dozen iterations.
+
+Language models learn to predict the next token. To predict the next token, a
+language model reads a sequence of tokens and returns a probability for every
+token in its vocabulary. The vocabulary is a fixed list of tokens, and every
+token is mapped to an integer id. Tokenization is the process that turns raw
+text into a sequence of token ids. A good tokenizer keeps common words as a
+single token and splits rare words into smaller pieces.
+
+A transformer is a stack of decoder blocks. Each decoder block contains an
+attention layer and a feed forward network. Attention lets every token look at
+earlier tokens, and the causal mask prevents a token from looking at the future.
+The feed forward network transforms each token on its own. Layer normalization
+keeps the activations stable, and residual connections keep the gradient flowing.
+
+Inference is the process of generating text with a trained model. The model
+generates one token at a time, appending every new token to the sequence. The
+key value cache stores attention keys and values so that earlier tokens are not
+recomputed. The cache grows with the context length, and the cache is the main
+reason why long context inference needs more memory.
+
+Temperature changes the shape of the next token distribution. A low temperature
+makes the distribution sharp, and a high temperature makes the distribution flat.
+Top k sampling keeps only the k most likely tokens, and top p sampling keeps the
+smallest set of tokens whose probability mass is above p. Greedy decoding always
+picks the most likely token, and beam search keeps several candidate sequences.
+
+Fine tuning updates the weights of a model on a new dataset. LoRA freezes the
+original weights and trains two small matrices instead. Quantization stores the
+weights with fewer bits, which reduces memory at the cost of some precision.
+Retrieval augmented generation adds external documents to the prompt instead of
+changing the weights. Every method trades memory, latency, and quality in a
+different way, and the right choice depends on the task.
+
+A token is the unit that the model sees. A token is not a word and a token is
+not a character. Common words become one token, while rare words and unusual
+punctuation become several tokens. The context window is the maximum number of
+tokens the model can read at once. When the prompt is longer than the context
+window, the oldest tokens must be dropped or compressed.
