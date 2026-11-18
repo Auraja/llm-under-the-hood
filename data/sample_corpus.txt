@@ -1,41 +1,45 @@
-# Sample corpus for local experiments (tokenization, BPE, n-gram demos).
-# Small, repetitive, and fully offline. Vocabulary is intentionally narrow so
-# that BPE merges become visible after only a few dozen iterations.
+# Corpus latihan lokal untuk eksperimen tokenisasi, BPE, dan demo n-gram.
+# Sengaja kecil, berulang, dan sepenuhnya offline. Kosakata dibuat sempit
+# supaya merge BPE mulai terlihat setelah beberapa puluh iterasi saja.
 
-Language models learn to predict the next token. To predict the next token, a
-language model reads a sequence of tokens and returns a probability for every
-token in its vocabulary. The vocabulary is a fixed list of tokens, and every
-token is mapped to an integer id. Tokenization is the process that turns raw
-text into a sequence of token ids. A good tokenizer keeps common words as a
-single token and splits rare words into smaller pieces.
+model bahasa belajar memprediksi token berikutnya. untuk memprediksi token
+berikutnya, model bahasa membaca urutan token dan mengembalikan probabilitas
+untuk setiap token di dalam kosakatanya. kosakata adalah daftar token yang
+tetap, dan setiap token dipetakan ke satu id bilangan bulat. tokenisasi adalah
+proses yang mengubah teks mentah menjadi urutan id token. tokenizer yang baik
+menjaga kata umum sebagai satu token dan memecah kata langka menjadi potongan
+yang lebih kecil.
 
-A transformer is a stack of decoder blocks. Each decoder block contains an
-attention layer and a feed forward network. Attention lets every token look at
-earlier tokens, and the causal mask prevents a token from looking at the future.
-The feed forward network transforms each token on its own. Layer normalization
-keeps the activations stable, and residual connections keep the gradient flowing.
+transformer adalah tumpukan blok dekoder. setiap blok dekoder berisi satu
+lapisan atensi dan satu jaringan feed forward. atensi membuat setiap token bisa
+melihat token sebelumnya, dan mask kausal mencegah token melihat masa depan.
+jaringan feed forward mengubah setiap token secara sendiri. normalisasi lapisan
+menjaga aktivasi tetap stabil, dan koneksi residual menjaga gradien tetap
+mengalir.
 
-Inference is the process of generating text with a trained model. The model
-generates one token at a time, appending every new token to the sequence. The
-key value cache stores attention keys and values so that earlier tokens are not
-recomputed. The cache grows with the context length, and the cache is the main
-reason why long context inference needs more memory.
+inferensi adalah proses menghasilkan teks dengan model yang sudah dilatih.
+model menghasilkan satu token setiap kali, lalu menambahkan token baru itu ke
+urutan. cache key value menyimpan kunci dan nilai atensi supaya token sebelumnya
+tidak dihitung ulang. cache tumbuh bersama panjang konteks, dan cache adalah
+alasan utama kenapa inferensi konteks panjang membutuhkan memori lebih besar.
 
-Temperature changes the shape of the next token distribution. A low temperature
-makes the distribution sharp, and a high temperature makes the distribution flat.
-Top k sampling keeps only the k most likely tokens, and top p sampling keeps the
-smallest set of tokens whose probability mass is above p. Greedy decoding always
-picks the most likely token, and beam search keeps several candidate sequences.
+temperatur mengubah bentuk distribusi token berikutnya. temperatur rendah
+membuat distribusi tajam, dan temperatur tinggi membuat distribusi datar.
+sampling top k hanya menyimpan k token yang paling mungkin, dan sampling top p
+menyimpan himpunan token terkecil yang massa probabilitasnya di atas p. decoding
+greedy selalu memilih token yang paling mungkin, dan beam search menyimpan
+beberapa kandidat urutan.
 
-Fine tuning updates the weights of a model on a new dataset. LoRA freezes the
-original weights and trains two small matrices instead. Quantization stores the
-weights with fewer bits, which reduces memory at the cost of some precision.
-Retrieval augmented generation adds external documents to the prompt instead of
-changing the weights. Every method trades memory, latency, and quality in a
-different way, and the right choice depends on the task.
+fine tuning memperbarui bobot model pada dataset baru. lora membekukan bobot
+asli lalu melatih dua matriks kecil sebagai gantinya. kuantisasi menyimpan bobot
+dengan bit yang lebih sedikit, sehingga mengurangi memori dengan mengorbankan
+sedikit presisi. retrieval augmented generation menambahkan dokumen eksternal ke
+prompt, bukan mengubah bobot. setiap metode menukar memori, latensi, dan
+kualitas dengan cara yang berbeda, dan pilihan yang tepat bergantung pada
+tugasnya.
 
-A token is the unit that the model sees. A token is not a word and a token is
-not a character. Common words become one token, while rare words and unusual
-punctuation become several tokens. The context window is the maximum number of
-tokens the model can read at once. When the prompt is longer than the context
-window, the oldest tokens must be dropped or compressed.
+token adalah satuan yang dilihat model. token bukan kata dan token bukan
+karakter. kata umum menjadi satu token, sedangkan kata langka dan tanda baca
+yang tidak biasa menjadi beberapa token. context window adalah jumlah maksimum
+token yang bisa dibaca model sekaligus. ketika prompt lebih panjang dari context
+window, token paling lama harus dibuang atau dipadatkan.
