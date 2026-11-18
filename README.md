@@ -18,3 +18,10 @@ beneran biar keluar angka, bukan cuma diagram.
 ```bash
 pip install -r requirements.txt
 ```
+
+## Catatan sementara
+
+- BPE sendiri: corpus 2.649 karakter, 40 merge rules → vocab 87 token.
+- Frasa `"a token is not a word"`: 21 karakter, 10 token di BPE lokal, 6 token di
+  tiktoken. Jadi buat teks Inggris tokenizer produksi jauh lebih efisien, dan itu
+  langsung kerasa di biaya per request.
