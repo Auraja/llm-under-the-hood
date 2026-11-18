@@ -145,7 +145,7 @@ def main() -> None:
     model = BPE.train(corpus, num_merges=40, verbose=True)
     print(f"\nvocabulary size : {model.vocab_size}")
 
-    sample = "a token is not a word"
+    sample = "token bukan kata"
     ids = model.encode(sample)
     print(f"\nteks      : {sample!r}")
     print(f"token     : {[model.itos[i] for i in ids]}")

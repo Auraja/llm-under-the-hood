@@ -22,13 +22,13 @@ sys.path.insert(0, HERE)
 from bpe import BPE  # noqa: E402
 
 SENTENCES = [
-    "Hello world",
-    "Tokenization is not the same as splitting on spaces.",
+    "Halo dunia",
+    "Tokenisasi bukan sekadar memecah teks pada spasi.",
     "LLM mempelajari pola dari data, bukan aturan tata bahasa.",
     "def attention(q, k, v): return softmax(q @ k.T) @ v",
-    "Antidisestablishmentarianism",
+    "Mempertanggungjawabkan",
     "2026-11-17T09:00:00Z",
-    "    indented code with weird     spacing   ",
+    "    kode menjorok dengan     spasi aneh   ",
 ]
 
 
@@ -119,7 +119,7 @@ def main() -> None:
 
     # Kasus yang paling menjelaskan perbedaan: kata panjang & kode
     print("\n=== Di mana tokenizer berbeda? ===")
-    for text in ["Antidisestablishmentarianism", "def attention(q, k, v): return softmax(q @ k.T) @ v"]:
+    for text in ["Mempertanggungjawabkan", "def attention(q, k, v): return softmax(q @ k.T) @ v"]:
         print(f"\nteks: {text}")
         if enc is not None:
             ids = enc.encode(text)
@@ -127,15 +127,23 @@ def main() -> None:
         bpe_ids = bpe.encode(text, strict=False)
         print(f"  BPE lokal ({len(bpe_ids)}): {[bpe.itos[i] for i in bpe_ids]}")
 
-    # Teks Indonesia cenderung lebih "mahal" di tokenizer berbahasa Inggris
+    # Kalimat yang sama isinya, dibandingkan dalam dua bahasa. Tokenizer
+    # berbahasa Inggris hampir selalu lebih boros untuk teks Indonesia.
     id_text = "Model bahasa mempelajari pola dari data."
-    print("\n=== Biaya token untuk bahasa non-Inggris ===")
-    print(f"teks      : {id_text!r} ({len(id_text)} karakter)")
-    print(f"BPE lokal : {len(bpe.encode(id_text, strict=False))} token "
+    en_text = "The language model learns patterns from data."
+    print("\n=== Harga teks Indonesia di tokenizer berbahasa Inggris ===")
+    print(f"indonesia : {id_text!r} ({len(id_text)} karakter)")
+    print(f"inggris   : {en_text!r} ({len(en_text)} karakter)")
+    print(f"BPE lokal : {len(bpe.encode(id_text, strict=False))} token indonesia, "
+          f"{len(bpe.encode(en_text, strict=False))} token inggris "
           f"(huruf kapital dibuang, corpus latihan huruf kecil)")
     if enc is not None:
         id_ids = enc.encode(id_text)
-        print(f"tiktoken  : {len(id_ids)} token -> {[enc.decode([i]) for i in id_ids]}")
+        en_ids = enc.encode(en_text)
+        print(f"tiktoken  : {len(id_ids)} token indonesia "
+              f"({len(id_text) / len(id_ids):.2f} char/token), "
+              f"{len(en_ids)} token inggris ({len(en_text) / len(en_ids):.2f} char/token)")
+        print(f"potongan indonesia: {[enc.decode([i]) for i in id_ids]}")
 
 
 if __name__ == "__main__":
