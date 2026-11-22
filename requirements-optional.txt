@@ -1,0 +1,14 @@
+# Dependensi opsional. Repo tetap jalan tanpa ini; yang hilang cuma bagian
+# pembandingnya.
+#
+#   pip install -r requirements-optional.txt
+
+# Cross-check attention NumPy vs PyTorch di day02_transformer/attention.py.
+# Tanpa torch, bagian itu dilewati dengan pesan "PyTorch tidak terpasang".
+# Pasang versi CPU biar tidak menarik build CUDA (~2 GB):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2
+
+# Client OpenAI-compatible untuk eksperimen API di day04_inference.
+# Tanpa ini, semua eksperimen lokal tetap jalan; hanya panggilan API yang mati.
+openai>=1.30

@@ -1,11 +1,7 @@
-# Dependensi untuk llm-under-the-hood (CPU only, tanpa training).
-#
-# PyTorch CPU sebaiknya dipasang terpisah agar tidak menarik build CUDA:
-#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Dependensi inti untuk llm-under-the-hood.
+# Semua eksperimen lokal jalan hanya dengan ini, CPU only, tanpa internet
+# (kecuali unduhan pertama file encoding tiktoken).
 
 numpy>=1.26
-torch>=2.2
 tiktoken>=0.7
 pytest>=8.0
-python-dotenv>=1.0
-openai>=1.30

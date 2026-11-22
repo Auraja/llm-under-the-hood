@@ -20,7 +20,8 @@ ilustrasi.
 - CPU only, tanpa GPU.
 - Nggak download bobot pretrained, jadi nggak ada `from_pretrained(...)`.
 - Nggak ada fine-tuning; efek LoRA/quantization/RAG dihitung, bukan dilatih.
-- Library: NumPy, PyTorch (CPU), tiktoken, pytest.
+- Library inti: NumPy, tiktoken, pytest. PyTorch + openai opsional
+  (`requirements-optional.txt`).
 - API cuma dipakai di Day 04 (opsional). Selain itu semua jalan tanpa key.
 
 ## Jalanin
@@ -33,11 +34,15 @@ source .venv/bin/activate     # Linux/macOS
 pip install -r requirements.txt
 ```
 
-PyTorch CPU aja biar downloadnya nggak berat:
+Itu cukup untuk semua eksperimen lokal. Dua dependensi opsional dipisah supaya
+tidak menyeret ~2 GB build CUDA:
 
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-optional.txt     # torch (cross-check) + openai (API)
 ```
+
+Tanpa file opsional itu, repo tetap jalan; `attention.py` cuma melewati bagian
+perbandingan PyTorch, dan bagian API di Day 04 otomatis di-skip.
 
 Test semua eksperimen (tanpa internet):
 
@@ -144,3 +149,7 @@ Detail di `day03_model_architecture/results.md`.
   turun ke 1.38e-2.
 - Mixtral 8x7B: 46.70B total, hanya **12.88B aktif** per token (28%).
 - Titik impas RAG vs fine-tuning untuk FAQ: **~404.000 request**.
+
+## Lisensi
+
+MIT — bebas dipakai, diubah, dan dibagikan, asal copyright-nya tetap ikut.
