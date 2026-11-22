@@ -1,44 +1,24 @@
 # Day 02 - Transformer
 
-## Tujuan
+Setelah Day 01, satu token cuma sebaris angka yang berdiri sendiri. Hari ini aku
+bongkar satu decoder block sampai kelihatan bentuk tensor dan angkanya:
+embedding, posisi, attention, FFN, normalisasi, residual.
 
-Membuka "kotak hitam" satu decoder block: embedding, posisi, attention, FFN,
-normalization, residual. Semua diimplementasikan dengan NumPy agar bentuk
-tensor dan operasinya terlihat.
+Semua NumPy, CPU only, tanpa `from_pretrained`.
 
-Setelah hari ini, kamu bisa menjawab:
+## Kenapa aku tidak mengikuti urutan file
 
-- Kenapa attention butuh posisi, dan apa bedanya absolute PE dengan RoPE?
-- Kenapa skor attention dibagi `sqrt(d_k)`?
-- Apa yang sebenarnya dihemat MQA/GQA?
-- Di mana sebagian besar parameter model berada?
-- Kenapa pre-norm lebih stabil untuk model dalam?
+Urutan di repo ini (`embeddings → posisi → rope → attention`) masuk akal buat
+penulis kode, tapi tidak buat pembaca. Aku pakai urutan ini:
 
-## Eksperimen
-
-| File | Yang dilakukan |
-|---|---|
-| `embeddings.py` | Lookup vs one-hot matmul, cosine similarity, weight tying |
-| `positional_encoding.py` | PE sinusoidal, sifat jarak, keterbatasannya |
-| `rope.py` | Rotasi q/k, bukti dot product bergantung jarak relatif |
-| `attention.py` | Softmax, causal mask, MHA, cross-check PyTorch |
-| `attention_variants.py` | MHA/MQA/GQA, parameter, ukuran KV cache |
-| `feed_forward.py` | FFN 4x, GELU/SiLU, SwiGLU dan aturan 8/3 |
-| `normalization.py` | LayerNorm vs RMSNorm, pre-norm vs post-norm |
-| `decoder_block.py` | Satu block lengkap + stack 12 layer |
-| `parameter_estimator.py` | Estimasi parameter dan bobot memori |
-
-```bash
-python day02_transformer/attention.py
-python day02_transformer/rope.py
-python day02_transformer/parameter_estimator.py
+```
+embedding → attention → posisi → rope → varian attention → ffn → norm → block → hitung parameter
 ```
 
-Semua file mandiri, CPU only, tanpa unduhan model.
+Alasannya: posisi baru terasa perlu **setelah** tahu bahwa attention itu buta
+urutan. Kalau dibaca dari awal, "kenapa perlu posisi" cuma jadi hafalan.
 
-## Konsep inti
-
-### Attention
+## Satu baris attention
 
 ```
 scores  = Q K^T / sqrt(d_k)
@@ -47,56 +27,70 @@ weights = softmax(scores)
 output  = weights V
 ```
 
-- `sqrt(d_k)` menjaga varians skor tetap ~1. Tanpa itu softmax menjadi
-  hampir one-hot dan gradien mengecil.
-- Causal mask membuat token hanya melihat masa lalu. Ini yang membedakan
-  encoder (bidirectional) dari decoder (autoregressive).
-- Attention tidak mencampur informasi antar head secara langsung; setiap head
-  punya proyeksi sendiri, lalu digabung lewat `W_o`.
+Tiga hal yang akhirnya klik buat aku:
 
-### Posisi
+- **`sqrt(d_k)` bukan hiasan.** Dengan `d_k=256`, dot mentah bisa +20.5 dan
+  setelah diskala jadi +1.3. Tanpa skala, softmax jadi nyaris one-hot: model
+  cuma melihat satu token, dan gradiennya mengecil sampai training mandek.
+- **Causal mask itu keharusan, bukan optimasi.** Kalau token boleh melihat ke
+  depan saat training, model cuma perlu menyalin jawaban. Loss turun, model
+  kelihatan hebat, lalu gagal total saat dipakai — karena saat menulis, kata
+  berikutnya memang belum ada. Aku mengujinya dengan mengubah token terakhir
+  dan memastikan output token sebelumnya **tidak berubah** (0.00e+00).
+- **Attention tidak mencampur head secara langsung.** Tiap head punya proyeksi
+  sendiri, digabung lewat `W_o`.
 
-Attention murni bersifat permutation equivariant. Posisi harus disuntikkan.
+## Posisi: dua cara
 
-- **Absolute PE**: vektor sin/cos ditambahkan ke embedding. Murah, tetapi
-  terikat panjang maksimum training.
-- **RoPE**: q dan k diputar; hasilnya hanya bergantung pada jarak relatif.
-  Tidak menambah parameter dan dipakai hampir semua model modern.
+Attention murni **permutation equivariant** — tukar urutan token, hasilnya ikut
+tertukar. Artinya tanpa posisi, "kucing makan ikan" dan "ikan makan kucing"
+identik.
 
-### FFN dan parameter
+- **Absolute PE**: vektor sin/cos ditambahkan ke embedding. Murah, tapi terikat
+  panjang training.
+- **RoPE**: q dan k **diputar**, dan hasil dot product-nya hanya bergantung
+  jarak relatif. Tidak menambah parameter, dan dipakai hampir semua model
+  modern (plus YaRN untuk memperpanjang konteks).
 
-FFN bekerja per token, tanpa interaksi antar posisi. Karena lebarnya 2.7-4x
-`d_model`, FFN menyumbang ~65-75% parameter transformer.
+## Sisanya, singkat
 
-### Normalization
+- **FFN** bekerja per token tanpa interaksi antar posisi, lebarnya 2.7–4x
+  `d_model`. Justru di sini sebagian besar parameter tinggal.
+- **LayerNorm / RMSNorm** menormalkan per token, bukan per batch, jadi
+  konsisten saat decoding satu token. BatchNorm tidak bisa.
+- **Pre-norm** (`x + sublayer(norm(x))`) menjaga residual stream tetap bersih;
+  model dalam jadi lebih stabil. Post-norm (transformer asli) lebih rewel dan
+  butuh warmup.
 
-LayerNorm dan RMSNorm menormalkan per token, bukan per batch, sehingga
-konsisten saat decoding satu token. Pre-norm (`x + sublayer(norm(x))`)
-menjaga residual stream tetap bersih dan membuat model dalam lebih stabil.
+## Angka yang aku hitung sendiri
 
-## Hasil
+| Yang dihitung | Hasil |
+|---|---|
+| NumPy vs PyTorch `scaled_dot_product_attention` | selisih **2.2e-16** |
+| Estimasi parameter LLaMA-2 7B / 70B | **6.74B / 68.98B** (selisih <0.1%) |
+| Estimasi parameter Qwen2.5 7B | **7.62B** |
+| Porsi FFN di LLaMA-2 7B | **64.2%** (attention 31.9%) |
+| KV cache MHA vs GQA-8 (d=4096, 32 head) | 4.096 MB → **1.024 MB** (4x) |
+| Bobot LLaMA-2 70B | 138 GB fp16, 34.5 GB int4 |
 
-Angka lengkap ada di [`results.md`](results.md). Ringkasnya:
+Yang bikin kaget: **GQA bukan soal menghemat parameter** (attention cuma ~32%
+dari total). Yang dihemat adalah **KV cache saat inference**, dan itulah yang
+bikin konteks 128k bisa jalan.
 
-- Incremental attention dengan cache identik dengan full attention
-  (selisih 0).
-- NumPy vs PyTorch `scaled_dot_product_attention`: selisih 2.2e-16.
-- Estimasi parameter cocok dengan angka publik: LLaMA-2 7B 6.74B, 70B 68.98B,
-  Qwen2.5 7B 7.62B (selisih < 0.1%).
-- FFN = 64% parameter LLaMA-2 7B; attention 32%.
-- GQA-8 memotong KV cache 4x dibanding MHA (pada 8k token: 1.0 GB vs 4.1 GB).
-- Bobot LLaMA-2 70B: 138 GB fp16, 34.5 GB int4 (belum termasuk KV cache).
+Detail ada di [`results.md`](results.md).
 
-## Pertanyaan untuk didiskusikan
+## Yang belum aku pahami
 
-1. Kalau attention bisa melihat semua token, kenapa masih perlu banyak layer?
-2. Kenapa menambah `n_kv_heads` menghemat memori inference tetapi hampir tidak
-   mengubah jumlah parameter?
-3. Kalau FFN mendominasi parameter, kenapa arsitektur tidak menghapus attention?
-4. Apa yang terjadi pada model kalau `sqrt(d_k)` dihilangkan saat training?
+1. Kalau attention sudah bisa melihat semua token sekaligus, kenapa masih butuh
+   12+ layer? Apa yang bisa dilakukan layer ke-10 yang tidak bisa dilakukan
+   layer pertama?
+2. Kalau FFN memegang 64% parameter, kenapa arsitekturnya tidak menghapus
+   attention saja?
+3. Menambah `n_kv_heads` menghemat memori inference tapi hampir tidak mengubah
+   parameter. Di titik mana penghematan itu mulai merusak kualitas?
 
-## Lanjut ke Day 03
+## Lanjut
 
-Kita sudah punya satu block dan bisa menghitung ukurannya. Berikutnya: bagaimana
-model dilatih (loss, gradient, DPO), dan bagaimana ia diadaptasi tanpa melatih
-ulang seluruh bobot (LoRA, quantization, RAG).
+Sekarang aku punya satu block dan bisa menghitung ukurannya. Berikutnya:
+bagaimana model dilatih (loss, gradient, DPO), dan bagaimana ia diadaptasi tanpa
+melatih ulang seluruh bobot. Itu Day 03.
