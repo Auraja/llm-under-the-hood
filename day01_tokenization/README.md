@@ -87,7 +87,8 @@ Angka lengkap ada di [`results.md`](results.md). Ringkasnya:
 - Frasa `"token bukan kata"`: 16 karakter, 4 token tiktoken, 6 token
   BPE lokal.
 - Tokenizer Inggris (cl100k) mencapai ~2.76 karakter/token pada teks uji;
-  BPE lokal 1.71.
+  BPE lokal 1.21 char/token — bukan 1.71, karena 34 dari 251 karakter
+  dibuang diam-diam dan sempat ikut dihitung sebagai "kompresi".
 - Overhead template ChatML ~48% dari prompt percakapan pendek.
 - Percakapan 1.307 token harus dipotong ke 180 token efektif (budget 220 minus
   reserve 40 untuk jawaban). `head_tail` dan `truncate_content` mempertahankan

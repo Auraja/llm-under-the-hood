@@ -186,6 +186,12 @@ def test_bpe_lenient_mode_drops_unknown():
     assert model.decode(ids) == "ab"
 
 
+def test_lost_characters_counts_dropped_symbols():
+    model = bpe.BPE.train("abc ab", num_merges=2)
+    assert tokenizer_comparison.lost_characters("abz", model) == 1
+    assert tokenizer_comparison.lost_characters("ab", model) == 0
+
+
 def test_bpe_validates_training_arguments():
     with pytest.raises(ValueError):
         bpe.BPE.train("abc", -1)

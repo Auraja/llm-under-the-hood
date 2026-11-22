@@ -56,31 +56,39 @@ sulit dilacak, jadi default di sini adalah `strict=True`.
 
 ## 2. Perbandingan tokenizer (`tokenizer_comparison.py`)
 
-| Teks | char | word | BPE lokal | tiktoken |
-|---|---:|---:|---:|---:|
-| `Halo dunia` | 10 | 2 | 8 | 4 |
-| `Tokenisasi bukan sekadar memecah teks pada spasi.` | 49 | 7 | 29 | 16 |
-| `LLM mempelajari pola dari data, bukan aturan tata bahasa.` | 57 | 9 | 34 | 20 |
-| `def attention(q, k, v): return softmax(q @ k.T) @ v` | 51 | 10 | 36 | 17 |
-| `Mempertanggungjawabkan` | 22 | 1 | 16 | 9 |
-| `2026-11-17T09:00:00Z` | 20 | 1 | 3 | 13 |
-| `    kode menjorok dengan     spasi aneh   ` | 42 | 5 | 21 | 12 |
-| **TOTAL** | **251** | **35** | **147** | **91** |
+| Teks | char | word | BPE lokal | hilang | tiktoken |
+|---|---:|---:|---:|---:|---:|
+| `Halo dunia` | 10 | 2 | 8 | 1 | 4 |
+| `Tokenisasi bukan sekadar memecah teks pada spasi.` | 49 | 7 | 29 | 1 | 16 |
+| `LLM mempelajari pola dari data, bukan aturan tata bahasa.` | 57 | 9 | 34 | 3 | 20 |
+| `def attention(q, k, v): return softmax(q @ k.T) @ v` | 51 | 10 | 36 | 10 | 17 |
+| `Mempertanggungjawabkan` | 22 | 1 | 16 | 1 | 9 |
+| `2026-11-17T09:00:00Z` | 20 | 1 | 3 | **18** | 13 |
+| `    kode menjorok dengan     spasi aneh   ` | 42 | 5 | 21 | 0 | 12 |
+| **TOTAL** | **251** | **35** | **147** | **34** | **91** |
 
-Rasio kompresi: BPE lokal 1.71 char/token, tiktoken 2.76 char/token.
+Kolom `hilang` itu penting: tokenizer lokal membuang karakter yang tidak ada
+di corpus. Dari 251 karakter, **34 hilang** (kapital, digit, tanda baca baru).
+
+Rasio kompresi yang jujur: **1.21 char/token** (178 karakter yang benar-benar
+ter-encode dibagi 147 token). Kalau memakai 251 karakter mentah seperti
+sebelumnya, angkanya jadi 1.71 — kelihatan lebih bagus karena teks yang hilang
+ikut dihitung. Bandingkan dengan tiktoken 2.76 char/token.
 
 Temuan:
 
-- Tokenizer lokal menang pada timestamp (`2026-...` = 3 token) hanya karena
-  karakter tersebut kebetulan sering muncul bersamaan di corpus kecil.
+- `2026-11-17T09:00:00Z` hanya 3 token karena **18 dari 20 karakternya dibuang**,
+  bukan karena tokenizer lokal pintar. Perbandingan lama sempat menyebut ini
+  "kemenangan"; itu keliru.
 - `Mempertanggungjawabkan`: tiktoken memecah menjadi morfem yang masuk akal
   untuk bahasa Indonesia (`M`, `emp`, `ert`, `ang`, `g`, `ung`, `jaw`, `ab`,
   `kan`) — jadi tokenizer Inggris pun sebagian "paham" sufiks `-kan`. BPE lokal
-  menjadi 16 potongan yang lebih acak.
+  menjadi 16 potongan yang lebih acak, dan huruf `M` ikut hilang.
 - Kalimat `Model bahasa mempelajari pola dari data.` (40 karakter) = 12 token
   tiktoken (3.33 char/token), sedangkan `The language model learns patterns
   from data.` (45 karakter) = 8 token (5.62 char/token). Teks Indonesia lebih
-  mahal per karakter di tokenizer berbahasa Inggris.
+  mahal per karakter di tokenizer berbahasa Inggris. Perbandingan ini pakai
+  tiktoken saja, karena BPE lokal membuang huruf kapital di awal kalimat.
 - Kode Python lebih mahal daripada prosa: 17 token untuk 51 karakter.
 
 ## 3. Special token (`special_tokens.py`)

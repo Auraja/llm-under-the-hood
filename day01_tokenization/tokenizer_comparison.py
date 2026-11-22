@@ -70,6 +70,20 @@ def compression_ratio(text: str, n_tokens: int) -> float:
     return chars_per_token(len(text), n_tokens)
 
 
+def lost_characters(text: str, model: "BPE") -> int:
+    """Berapa karakter yang dibuang diam-diam saat encode lenient.
+
+    Tokenizer lokal hanya mengenal karakter yang ada di corpus. Sisanya
+    (huruf kapital, digit, tanda baca baru) hilang tanpa peringatan saat
+    ``strict=False``. Angka ini wajib ditampilkan, karena tanpa itu
+    perbandingan token jadi menyesatkan: string panjang bisa terlihat "murah"
+    justru karena sebagian besar isinya dibuang.
+    """
+    ids = model.encode(text, strict=False)
+    recovered = model.decode(ids)
+    return len("".join(text.split())) - len("".join(recovered.split()))
+
+
 def main() -> None:
     with open(os.path.join(ROOT, "data", "sample_corpus.txt"), encoding="utf-8") as handle:
         corpus = handle.read()
@@ -86,36 +100,50 @@ def main() -> None:
     print("           teks yang hilang, hanya dipecah lebih banyak token.")
     print()
 
-    header = f"{'teks':<44} {'char':>5} {'word':>5} {'bpe':>5} {'tiktok':>7}"
+    header = (f"{'teks':<44} {'char':>5} {'word':>5} {'bpe':>5} "
+              f"{'hilang':>7} {'tiktok':>7}")
     print(header)
     print("-" * len(header))
 
-    totals = {"char": 0, "word": 0, "bpe": 0, "tiktoken": 0}
+    totals = {"char": 0, "word": 0, "bpe": 0, "tiktoken": 0, "hilang": 0}
     for text in SENTENCES:
         n_char = len(char_tokens(text))
         n_word = len(word_tokens(text))
         n_bpe = len(bpe.encode(text, strict=False))
         n_tk = len(enc.encode(text)) if enc is not None else 0
+        n_lost = lost_characters(text, bpe)
 
         totals["char"] += n_char
         totals["word"] += n_word
         totals["bpe"] += n_bpe
         totals["tiktoken"] += n_tk
+        totals["hilang"] += n_lost
 
         label = text if len(text) <= 42 else text[:39] + "..."
         tk_cell = f"{n_tk:>7}" if enc is not None else f"{'n/a':>7}"
-        print(f"{label:<44} {n_char:>5} {n_word:>5} {n_bpe:>5} {tk_cell}")
+        print(f"{label:<44} {n_char:>5} {n_word:>5} {n_bpe:>5} "
+              f"{n_lost:>7} {tk_cell}")
 
     print("-" * len(header))
     tk_total = f"{totals['tiktoken']:>7}" if enc is not None else f"{'n/a':>7}"
     print(f"{'TOTAL':<44} {totals['char']:>5} {totals['word']:>5} "
-          f"{totals['bpe']:>5} {tk_total}")
+          f"{totals['bpe']:>5} {totals['hilang']:>7} {tk_total}")
 
-    # denominator harus karakter yang sama dengan yang di-tokenize
+    # Pembilang harus karakter yang benar-benar ter-encode, bukan karakter mentah.
     total_chars = sum(len(text) for text in SENTENCES)
-    print(f"\nRasio kompresi BPE      : {chars_per_token(total_chars, totals['bpe']):.2f} char/token")
+    nonspace_chars = sum(len("".join(text.split())) for text in SENTENCES)
+    encoded_chars = nonspace_chars - totals["hilang"]
+    print(f"\nRasio kompresi BPE      : "
+          f"{chars_per_token(encoded_chars, totals['bpe']):.2f} char/token")
+    print(f"  dihitung dari {encoded_chars} karakter yang benar-benar ter-encode.")
+    print(f"  {totals['hilang']} karakter lain dibuang diam-diam (kapital, digit,")
+    print("  atau tanda baca yang tidak ada di corpus).")
+    print(f"  kalau pakai {total_chars} karakter mentah, angkanya jadi "
+          f"{chars_per_token(total_chars, totals['bpe']):.2f} char/token")
+    print("  - kelihatan lebih bagus dari aslinya, karena teks yang hilang ikut dihitung.")
     if enc is not None:
-        print(f"Rasio kompresi tiktoken : {chars_per_token(total_chars, totals['tiktoken']):.2f} char/token")
+        print(f"Rasio kompresi tiktoken : "
+              f"{chars_per_token(total_chars, totals['tiktoken']):.2f} char/token")
 
     # Kasus yang paling menjelaskan perbedaan: kata panjang & kode
     print("\n=== Di mana tokenizer berbeda? ===")
@@ -126,6 +154,10 @@ def main() -> None:
             print(f"  tiktoken ({len(ids)}): {[enc.decode([i]) for i in ids]}")
         bpe_ids = bpe.encode(text, strict=False)
         print(f"  BPE lokal ({len(bpe_ids)}): {[bpe.itos[i] for i in bpe_ids]}")
+        lost = lost_characters(text, bpe)
+        if lost:
+            print(f"  {lost} karakter dibuang, jadi angka BPE di atas tidak "
+                  f"mewakili seluruh teks")
 
     # Kalimat yang sama isinya, dibandingkan dalam dua bahasa. Tokenizer
     # berbahasa Inggris hampir selalu lebih boros untuk teks Indonesia.
@@ -134,9 +166,12 @@ def main() -> None:
     print("\n=== Harga teks Indonesia di tokenizer berbahasa Inggris ===")
     print(f"indonesia : {id_text!r} ({len(id_text)} karakter)")
     print(f"inggris   : {en_text!r} ({len(en_text)} karakter)")
-    print(f"BPE lokal : {len(bpe.encode(id_text, strict=False))} token indonesia, "
+    print(f"BPE lokal : {len(bpe.encode(id_text, strict=False))} token indonesia "
+          f"({lost_characters(id_text, bpe)} karakter dibuang), "
           f"{len(bpe.encode(en_text, strict=False))} token inggris "
-          f"(huruf kapital dibuang, corpus latihan huruf kecil)")
+          f"({lost_characters(en_text, bpe)} karakter dibuang)")
+    print("  angka BPE lokal di atas tidak bisa dipakai membandingkan bahasa,")
+    print("  karena huruf kapital di awal kalimat ikut terbuang.")
     if enc is not None:
         id_ids = enc.encode(id_text)
         en_ids = enc.encode(en_text)
