@@ -4,7 +4,7 @@ Dijalankan pada:
 
 | Item | Nilai |
 |---|---|
-| Tanggal | 17 November 2026 |
+| Tanggal | 17 November 2026, bagian 1–2 diulang 18 November setelah corpus diganti ke bahasa Indonesia |
 | OS | Windows 11 (10.0.26300) |
 | Python | 3.12.6 |
 | NumPy | 2.2.6 |
