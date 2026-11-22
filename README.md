@@ -12,7 +12,7 @@ ilustrasi.
 
 - [x] Day 01 - tokenization
 - [x] Day 02 - transformer (attention, rope, jumlah parameter)
-- [ ] Day 03 - arsitektur model & cara adaptasi (LoRA, quantization, RAG)
+- [x] Day 03 - arsitektur model & cara adaptasi (LoRA, quantization, RAG)
 - [ ] Day 04 - inference (KV cache, decoding, biaya)
 
 ## Batasan
@@ -90,9 +90,20 @@ day02_transformer/
 ├── parameter_estimator.py
 ├── README.md
 └── results.md
+day03_model_architecture/
+├── model_families.py
+├── training_concepts.py
+├── loss_perplexity.py
+├── adaptation_methods.py
+├── lora_estimator.py
+├── quantization_estimator.py
+├── rag_vs_finetuning.py
+├── README.md
+└── results.md
 tests/
 ├── test_tokenization.py
-└── test_attention.py
+├── test_attention.py
+└── test_architecture.py
 ```
 
 ## Day 01 - angka yang keluar
@@ -120,3 +131,15 @@ Detail di `day02_transformer/results.md`.
   Yang dihemat cache-nya, bukan parameter utamanya.
 - Attention NumPy vs PyTorch: selisih **2.2e-16**.
 - Bobot LLaMA-2 70B: 138 GB fp16, 34.5 GB int4 — belum termasuk KV cache.
+
+## Day 03 - angka yang keluar
+
+Detail di `day03_model_architecture/results.md`.
+
+- LoRA r=16 di semua proyeksi: **39.98M** parameter (0.57% dari 7B), memori
+  state 479.7 MB vs 112 GB full fine-tuning → **233x** lebih hemat.
+- Merge LoRA identik dengan versi unmerged (selisih 1.4e-15).
+- int4 per-tensor rusak oleh outlier (relative MSE 2.55e-2); per-group 128
+  turun ke 1.38e-2.
+- Mixtral 8x7B: 46.70B total, hanya **12.88B aktif** per token (28%).
+- Titik impas RAG vs fine-tuning untuk FAQ: **~404.000 request**.
