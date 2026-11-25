@@ -13,7 +13,7 @@ ilustrasi.
 - [x] Day 01 - tokenization
 - [x] Day 02 - transformer (attention, rope, jumlah parameter)
 - [x] Day 03 - arsitektur model & cara adaptasi (LoRA, quantization, RAG)
-- [ ] Day 04 - inference (KV cache, decoding, biaya)
+- [x] Day 04 - inference (KV cache, decoding, biaya)
 
 ## Batasan
 
@@ -105,10 +105,22 @@ day03_model_architecture/
 ├── rag_vs_finetuning.py
 ├── README.md
 └── results.md
+day04_inference/
+├── api_client.py
+├── generation_parameters.py
+├── decoding_simulation.py
+├── kv_cache.py
+├── prefix_caching.py
+├── speculative_decoding.py
+├── memory_estimator.py
+├── benchmark.py
+├── README.md
+└── results.md
 tests/
 ├── test_tokenization.py
 ├── test_attention.py
-└── test_architecture.py
+├── test_architecture.py
+└── test_inference.py
 ```
 
 ## Day 01 - angka yang keluar
@@ -149,6 +161,18 @@ Detail di `day03_model_architecture/results.md`.
   turun ke 1.38e-2.
 - Mixtral 8x7B: 46.70B total, hanya **12.88B aktif** per token (28%).
 - Titik impas RAG vs fine-tuning untuk FAQ: **~404.000 request**.
+
+## Day 04 - angka yang keluar
+
+Detail di `day04_inference/results.md`.
+
+- Incremental attention identik dengan full attention (selisih **6.66e-16**).
+- Output 4.000 token: kerja attention turun dari 8.002.000 pasangan jadi 4.045
+  (~**1978x**).
+- KV cache LLaMA-3 8B: 128 KB/token → 0.5 GB @4k, **16 GB @128k**.
+- Prefix caching: TTFT **2.310 ms → 60 ms**, biaya per request $0.002208 → $0.000768.
+- Speculative decoding gamma=4, alpha=0.89: **3.35x**; alpha=0.75 cuma 2.54x.
+- CPU ini: 103–221 GFLOPS matmul, ~18 GB/s bandwidth → model 8B cuma ~1 token/detik.
 
 ## Lisensi
 
